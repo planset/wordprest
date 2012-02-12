@@ -96,3 +96,38 @@
     font-family: monospace;
     padding-top: 4px;
 }
+
+#rest-container textarea {
+    font-family: 'MS Gothic', 'IPAGothic', 'Osaka-Mono', monospace;
+}
+
+/** 
+ * override: editor-buttons.css (editor-buttons.dev.css) */
+.tmce-active #rest-container,
+.tmce-active #rest-toolbar,
+.html-active #rest-container,
+.html-active #rest-toolbar {
+  display: none;
+}
+.html-active .wp-editor-area {  display: block;
+}
+.html-active .quicktags-toolbar {
+  display: block;
+}
+.tmce-active #wp-content-editor-container,
+.html-active #wp-content-editor-container {
+/*  display: block;*/
+}
+.rest-active #wp-content-editor-container {
+  display: none;}
+.rest-active #rest-container {
+  display: block;
+}
+.rest-active #rest-toolbar {
+  display: block;}
+.rest-active .quicktags-toolbar {>  display: none;
+}
+.rest-active .switch-rest {  border-color:#ccc #ccc #e9e9e9;
+  background-color:#e9e9e9;
+  color:#333;
+}

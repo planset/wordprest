@@ -370,7 +370,13 @@ class ReStPlugin
      * @todo Remove the "active" class from other tabs if 'rest' is active.
      */
     public static function addRestEditor()
-    {
+    {	
+		/** 
+		 * ここで取得できるバッファにはeditorのコードはない。別のactionをフックして置換する必要がある。
+		 * wp-include/class-wp-editor:64行目くらいのコードで
+		 * ボタンを追加して出力しているので、ここら辺を調査すればフックできるactionがわかるかも。
+		 */
+		return ;
         /**
          * Get the stored output we buffered.
          */
@@ -492,7 +498,7 @@ class ReStPlugin
              */
             $contents = sprintf(
                 '<textarea cols=40 rows=10>%s</textarea>',
-                htmlentities($rest_src)
+                htmlentities($rest_src, ENT_COMPAT, 'UTF-8')
             );
         }
         

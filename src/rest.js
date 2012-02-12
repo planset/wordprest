@@ -53,7 +53,7 @@ jQuery.fn.extend({
 
 jQuery(document).ready(function($){
 
-    var rest_tab = $('#edButtonREST');
+    var rest_tab = $('#content-rest');
     var rest_toolbar = $('#rest-toolbar');
     var rest_container = $('#rest-container');
     var rest_src = $('#rest-container textarea');
@@ -63,8 +63,9 @@ jQuery(document).ready(function($){
     var all_tabs = $('#edButtonREST, #edButtonHTML, #edButtonPreview');
     var quick_tags = $('#quicktags');
     var html_editor = $('#content');
-    var editor_container = $('#editorcontainer');
+    var editor_container = $('#wp-content-editor-container');
     var update_rest;
+    var editor_content_wrap = $('#wp-content-wrap');
     
     /**
      * Store the original editor switching method.
@@ -79,114 +80,71 @@ jQuery(document).ready(function($){
          * Get some reasonable defaults.
          */
         id = id || 'content';
-        mode = mode || this.mode || 'rest';
-        var self = this;
-        
-        if (!self.mode) {
-            all_tabs.filter('.active').each(function() {
-                if ($(this).attr('id') == 'edButtonHTML') {
-                    self.mode = 'html';
-                } else if ($(this).attr('id') == 'edButtonPreview') {
-                    self.mode = 'tinymce';
-                } else {
-                    self.mode = 'rest';
-                }
-            });
+        mode = mode || 'rest';
+
+        var t = this, ed = tinyMCE.get(id), wrap_id, txtarea_el, dom = tinymce.DOM;
+
+        wrap_id = 'wp-'+id+'-wrap';
+        txtarea_el = dom.get(id);
+
+        if ( 'toggle' == mode ) {
+            if ( ed && !ed.isHidden() )
+                mode = 'html';
+            else
+                mode = 'tmce';
         }
+        if ( 'tmce' == mode || 'tinymce' == mode ) {
+            if ( ed && ! ed.isHidden() )
+                return false;
 
-        /**
-         * Bail if we're already in the requested mode.
-         */
-        if (self.mode == mode) {
-           return false;
-        }
+            if ( typeof(QTags) != 'undefined' )
+                QTags.closeAllTags(id);
 
-        /**
-         * Try to find the editor.
-         */
-        var ed;
-        try {
-            ed = tinyMCE.get(id);
-        } catch(e) {
-            ed = false;
-        }
-    
-        all_tabs.removeClass('active');
-        
-        /**
-         * Handle the different editor types.
-         *
-         * WordPress makes this *very* difficult. Plus, TinyMCE is involved,
-         * so you already knew it was going to be a headache. Ultimately we're
-         * going to have to take on the responsibility of switching every 
-         * individual editor element on and off, depending on the mode. There 
-         * are so many edge cases that you should avoid messing with the
-         * following code unless you are sure you know what you're doing.
-         */
-        if (mode == 'rest') {
-        
-            rest_tab.addClass('active');
-            
-            if (ed) {
-                ed.hide();
-            }
-            
-            editor_container.hide();
-            html_editor.hide();
-            quick_tags.hide();
+            if ( tinyMCEPreInit.mceInit[id] && tinyMCEPreInit.mceInit[id].wpautop )
+                txtarea_el.value = t.wpautop( txtarea_el.value );
 
-            rest_container.show();
-            rest_toolbar.show();
-            
-        } else if (mode == 'html') {
-        
-            html_tab.addClass('active');
-            
-            rest_container.hide();
-            rest_toolbar.hide();
-
-            if (ed) {
-                ed.hide();
-            }
-            
-            html_editor.show();
-            editor_container.show();
-            quick_tags.show();
-            
-        } else if (mode == 'tinymce') {
-        
-            tinymce_tab.addClass('active');
-            
-            html_editor.hide();
-            quick_tags.hide();
-
-            rest_container.hide();
-            rest_toolbar.hide();
-            
-            edCloseAllTags();
-            
-            html_editor.val(this.wpautop(html_editor.val()));
-            
-            editor_container.show();
-            
-            if (ed) {
+            if ( ed ) {
                 ed.show();
             } else {
-                html_editor.show();
-                tinyMCE.execCommand('mceAddControl', false, id);
+                ed = new tinymce.Editor(id, tinyMCEPreInit.mceInit[id]);
+                ed.render();
             }
-        }
-        
-        
-        /**
-         * Save our preferences with the WordPress system.
-         */
-        setUserSetting('editor', mode);
-        self.mode = mode;
 
+            dom.removeClass(wrap_id, 'html-active');
+            dom.removeClass(wrap_id, 'rest-active');
+            dom.addClass(wrap_id, 'tmce-active');
+            setUserSetting('editor', 'tinymce');
+        } else if ( 'html' == mode ) {
+            if ( ed ) {
+                txtarea_el.style.height = ed.getContentAreaContainer().offsetHeight + 20 + 'px';
+                ed.hide();
+            }
+
+            dom.removeClass(wrap_id, 'tmce-active');
+            dom.removeClass(wrap_id, 'rest-active');
+            dom.addClass(wrap_id, 'html-active');
+            setUserSetting('editor', 'html');
+        } else if ( 'rest' == mode ) {
+
+            if ( !ed ) {
+                ed = new tinymce.Editor(id, tinyMCEPreInit.mceInit[id]);
+                ed.render();
+            }
+            if ( ed ) {
+                txtarea_el.style.height = ed.getContentAreaContainer().offsetHeight + 20 + 'px';
+                ed.hide();
+            }
+            dom.removeClass(wrap_id, 'tmce-active');
+            dom.removeClass(wrap_id, 'html-active');
+            dom.addClass(wrap_id, 'rest-active');
+        
+            setUserSetting('editor', 'rest');
+            //rest_container.show();
+            //rest_toolbar.show();
+        }
         return false;
     }
-    
+
     
     /**
      * Saves reSt source to database for post. Generates new HTML
@@ -246,15 +204,16 @@ jQuery(document).ready(function($){
     /**
      * Remove active tag from other tabs, which is hard to do in PHP.
      */
-    if (rest_tab.hasClass('active')) {
-        other_tabs.removeClass('active');
-        html_editor.hide();
-        editor_container.hide();
-        rest_toolbar.show();
-        rest_container.show();
+    if (editor_content_wrap.hasClass('rest-active')) {
+    } else if (editor_content_wrap.hasClass('tmce-active')) {
+        var id = 'content';
+        var ed = tinyMCE.get(id);
+        if ( !ed ) {
+            ed = new tinymce.Editor(id, tinyMCEPreInit.mceInit[id]);
+            ed.render();
+        }
+    } else if (editor_content_wrap.hasClass('html-active')) {
     } else {
-        rest_toolbar.hide();
-        rest_container.hide();
     }
     
     /**
